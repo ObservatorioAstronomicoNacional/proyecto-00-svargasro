@@ -208,19 +208,24 @@ def quadraticInterpolation(x1, x2, x3, f1, f2, f3, x):
     return p2
 
 def findDateGivenIndex(t_vals,r,rIndex,r0):
-    #Los puntos elegidos para interpolar dependen de si está en la parte creciente y en la parte
-    #decreciente. Lo anterior para evitar errores para el último dato de r decreciente.
-    if rIndex<50:
-            x1,x2,x3 = t_vals[rIndex], t_vals[rIndex+1], t_vals[rIndex+2]
-            f1,f2,f3 = r[rIndex], r[rIndex+1], r[rIndex+2]
-            x = np.linspace(x1,x2,30)
-    else:
-            x1,x2,x3 = t_vals[rIndex-1], t_vals[rIndex], t_vals[rIndex+1]
-            f1,f2,f3 = r[rIndex-1], r[rIndex], r[rIndex+1]
-            x = np.linspace(x2,x3,30)
 
 
+    wasLimit=False
+    lenr = len(r)
+    if rIndex==(lenr-2): #Condicional para evitar errores en caso de que para la parte decreciente, se obtenga el último índice como el adecuado.
+        rIndex=rIndex-1
+        wasLimit=True
+        # x1,x2,x3 = t_vals[rIndex-1], t_vals[rIndex], t_vals[rIndex+1]
+        # f1,f2,f3 = r[rIndex-1], r[rIndex], r[rIndex+1]
+        # x = np.linspace(x2,x3,30)
 
+    x1,x2,x3 = t_vals[rIndex], t_vals[rIndex+1], t_vals[rIndex+2]
+    f1,f2,f3 = r[rIndex], r[rIndex+1], r[rIndex+2]
+
+    x = np.linspace(x1,x2,30)
+
+    if wasLimit: #Condicional para redefinir el intervalo donde está el valor, puesto que ya no está entre x1 y x2.
+        x =  np.linspace(x2,x3,30)
 
     
     r_interpolated = np.array(quadraticInterpolation(x1, x2, x3, f1, f2, f3,x)) #Se interpola
@@ -248,7 +253,11 @@ def findDateGivenIndex(t_vals,r,rIndex,r0):
     # Puntos originales
     plt.scatter([x1, x2, x3], [f1.value, f2.value, f3.value], color='red', label='Datos originales', zorder=5)
 
-    plt.plot(t_vals[(rIndex-1):(rIndex+3)], r[(rIndex-1):(rIndex+3)], label='r vs t', color='darkorange', marker='.')
+    if rIndex == 0:
+        plt.plot(t_vals[(rIndex):(rIndex+3)], r[(rIndex):(rIndex+3)], label='r vs t', color='darkorange', marker='.')
+    else:
+        plt.plot(t_vals[(rIndex-1):(rIndex+3)], r[(rIndex-1):(rIndex+3)], label='r vs t', color='darkorange', marker='.')
+
     # plt.plot(t_vals, r, label='r vs t', color='darkorange', marker='.')
 
     # Línea vertical en x = closerT
@@ -262,7 +271,7 @@ def findDateGivenIndex(t_vals,r,rIndex,r0):
     plt.ylabel('Distancia [km]')
     plt.legend()
     plt.tight_layout()
-    if rIndex<50:
+    if rIndex<(int(lenr/2)):
         plt.savefig(f'controlInterpolationSuperior.pdf')
         print("controlInterpolationSuperior.pdf creado.")
     else:
@@ -277,7 +286,7 @@ def date(r0):
     T = TimeDelta((T_o).value*u.s)
     T = t_p + T
     delta_total = T - t_p
-    steps = np.linspace(0, 1, 100)
+    steps = np.linspace(0, 1, 101) #impar para que tome el máximo.
     delta_array = steps * delta_total
     t = t_p + delta_array
 
@@ -310,7 +319,8 @@ def main():
     orbit()
 
     r0 = 1.5*R_earth.value
-    # r0= 9683
+    # r0 = 6935 #Valor de prueba, límite 1
+    # r0= 9683  #Valor de prueba, límite 2
     dateIncreasing,dateDecreasing = date(r0)
     dateIncreasingSec = (dateIncreasing-t_p).to_value('s')
     dateDecreasingSec = (dateDecreasing-t_p).to_value('s')
